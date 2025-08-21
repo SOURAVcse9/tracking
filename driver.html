@@ -33,10 +33,18 @@
 
   <script>
     // Initialize Leaflet map
-    const map = L.map('map').setView([0, 0], 2); // default view before location is found
+    const map = L.map('map').setView([0, 0], 2); // Default view
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
+
+    // Custom bus icon
+    const busIcon = L.icon({
+      iconUrl: 'images/bus.png', // Bus icon URL
+      iconSize: [38, 38],        // Icon size in pixels
+      iconAnchor: [19, 38],      // Point of the icon which corresponds to marker location
+      popupAnchor: [0, -38]      // Where popup opens relative to icon
+    });
 
     let marker;
     let watchId;
@@ -51,26 +59,25 @@
       document.getElementById("statusBadge").className = "badge text-bg-success";
 
       if (navigator.geolocation) {
-        let firstUpdate = true; // flag to zoom on first location fix
+        let firstUpdate = true;
 
         watchId = navigator.geolocation.watchPosition(
           (pos) => {
             const { latitude, longitude, speed } = pos.coords;
 
-            // Add marker or update position
+            // Add or update marker
             if (!marker) {
-              marker = L.marker([latitude, longitude]).addTo(map)
+              marker = L.marker([latitude, longitude], { icon: busIcon }).addTo(map)
                         .bindPopup("You are here").openPopup();
             } else {
               marker.setLatLng([latitude, longitude]);
             }
 
-            // Zoom to location on first update
+            // Zoom on first update
             if (firstUpdate) {
               map.setView([latitude, longitude], 16);
               firstUpdate = false;
             } else {
-              // smoothly follow user without changing zoom
               map.panTo([latitude, longitude]);
             }
 
@@ -78,7 +85,7 @@
             firebase.database().ref(`buses/${busId}`).set({
               latitude,
               longitude,
-              speed: speed ? (speed * 3.6).toFixed(1) : 0, // m/s → km/h
+              speed: speed ? (speed * 3.6).toFixed(1) : 0, // Convert m/s to km/h
               timestamp: Date.now()
             });
           },
