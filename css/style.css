@@ -1,0 +1,21 @@
+:root { --bar-h: 64px; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, "Helvetica Neue", "Noto Sans Bengali", "Noto Sans", sans-serif;
+}
+
+#map {
+  width: 100%;
+  height: calc(100vh - var(--bar-h));
+}
+
+.navbar {
+  height: var(--bar-h);
+}
+
+.leaflet-popup-content {
+  margin: 8px 12px;
+  line-height: 1.2;
+}
