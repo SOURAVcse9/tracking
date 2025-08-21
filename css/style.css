@@ -1,20 +1,19 @@
-/* === Global Styles === */
-body, html {
+/* Apply map only if it exists */
+/* Map must take full screen height */
+html, body {
   height: 100%;
   margin: 0;
-  font-family: "Segoe UI", Roboto, Arial, sans-serif;
-}
-body {
-  margin: 0;
   padding: 0;
-  font-family: "Segoe UI", Roboto, Arial, sans-serif;
-  background: linear-gradient(135deg, #4facfe, #00f2fe);
-  color: #fff;
+}
+body:has(#map) {
+  background: #fff; /* normal background for map pages */
+  display: block;
+}
+
+body:has(.container) {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  text-align: center;
 }
 
 .container {
@@ -67,9 +66,9 @@ body {
 }
 
 #map {
-  height: 90vh;
+  width: 100%;
+  height: calc(100vh - 56px); /* subtract navbar height */
 }
-
 /* Navbar tweaks */
 .navbar {
   flex-wrap: wrap;

@@ -25,12 +25,15 @@
 
   <div id="map"></div>
 
+  <!-- Leaflet and Firebase -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="js/firebase.js"></script>
+
   <script>
-    const map = L.map('map').setView([0, 0], 13);
+    // Initialize Leaflet map
+    const map = L.map('map').setView([0, 0], 2); // default view before location is found
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
@@ -48,22 +51,40 @@
       document.getElementById("statusBadge").className = "badge text-bg-success";
 
       if (navigator.geolocation) {
-        watchId = navigator.geolocation.watchPosition((pos) => {
-          const { latitude, longitude, speed } = pos.coords;
-          if (!marker) {
-            marker = L.marker([latitude, longitude]).addTo(map);
-          } else {
-            marker.setLatLng([latitude, longitude]);
-          }
-          map.setView([latitude, longitude], 15);
+        let firstUpdate = true; // flag to zoom on first location fix
 
-          firebase.database().ref(`buses/${busId}`).set({
-            latitude,
-            longitude,
-            speed: speed ? (speed * 3.6).toFixed(1) : 0, // m/s → km/h
-            timestamp: Date.now()
-          });
-        }, (err) => console.error(err), { enableHighAccuracy: true });
+        watchId = navigator.geolocation.watchPosition(
+          (pos) => {
+            const { latitude, longitude, speed } = pos.coords;
+
+            // Add marker or update position
+            if (!marker) {
+              marker = L.marker([latitude, longitude]).addTo(map)
+                        .bindPopup("You are here").openPopup();
+            } else {
+              marker.setLatLng([latitude, longitude]);
+            }
+
+            // Zoom to location on first update
+            if (firstUpdate) {
+              map.setView([latitude, longitude], 16);
+              firstUpdate = false;
+            } else {
+              // smoothly follow user without changing zoom
+              map.panTo([latitude, longitude]);
+            }
+
+            // Update Firebase
+            firebase.database().ref(`buses/${busId}`).set({
+              latitude,
+              longitude,
+              speed: speed ? (speed * 3.6).toFixed(1) : 0, // m/s → km/h
+              timestamp: Date.now()
+            });
+          },
+          (err) => console.error("Geolocation error:", err),
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+        );
       } else {
         alert("Geolocation not supported");
       }
@@ -71,8 +92,10 @@
 
     document.getElementById("endBtn").addEventListener("click", () => {
       const busId = document.getElementById("busId").value.trim();
-      navigator.geolocation.clearWatch(watchId);
+      if (watchId) navigator.geolocation.clearWatch(watchId);
+
       firebase.database().ref(`buses/${busId}`).remove();
+
       document.getElementById("statusBadge").innerText = "idle";
       document.getElementById("statusBadge").className = "badge text-bg-secondary";
       document.getElementById("startBtn").disabled = false;
